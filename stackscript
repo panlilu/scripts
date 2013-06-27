@@ -8,7 +8,7 @@
 # <UDF name="deploy_user" Label="Username of deploy user" default="deploy" />
 # <UDF name="deploy_psw" Label="Password of deploy user" default="" />
 
-exec &> /root/stackscript.log
+#exec &> /root/stackscript.log
 
 # Update packages and install essentials
     cd /tmp
