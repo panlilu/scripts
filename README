@@ -1,1 +1,1 @@
-bash <(curl -s https://raw.github.com/simpx/scripts/master/stackscript)
+bash <(curl -s https://raw.github.com/panlilu/scripts/master/stackscript)
