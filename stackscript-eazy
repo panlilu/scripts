@@ -1,0 +1,112 @@
+#!/bin/bash
+#
+# See: https://github.com/panlilu/scripts/blob/master/stackscript
+# Install: Ruby 2.0 rc2 ,Nginx 1.5.3 .Rails
+
+# <UDF name="rr_env" Label="Rails/Rack environment to run" default="production" />
+# <UDF name="deploy_user" Label="Username of deploy user" default="deploy" />
+# <UDF name="deploy_psw" Label="Password of deploy user" default="" />
+
+#exec &> /root/stackscript.log
+
+# Update packages and install essentials
+    cd /tmp
+    echo "Start to install! Good Luck!"
+    apt-get update
+    apt-get -y install aptitude
+    aptitude -y full-upgrade
+    apt-get -y install build-essential zlib1g-dev libssl-dev libreadline-gplv2-dev openssh-server libyaml-dev libcurl4-openssl-dev libxslt-dev libxml2-dev libpcre3 libpcre3-dev
+    aptitude -y install wget vim less
+    sed -i -e 's/^#PS1=/PS1=/' /root/.bashrc # enable the colorful root bash prompt
+    sed -i -e "s/^#alias ll='ls -l'/alias ll='ls -al'/" /root/.bashrc # enable ll list long alias <3
+    echo "alias cl='clear&&ls'" >> /root/.bashrc
+    echo "Essentials installed"
+
+
+# Installing Ruby
+    export RUBY_VERSION="ruby-2.0.0-rc2"
+    echo "Installing Ruby $RUBY_VERSION"
+    echo "Downloading: (from calling wget http://ftp.ruby-lang.org/pub/ruby/2.0/$RUBY_VERSION.tar.gz)"
+    wget http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_VERSION.tar.gz
+    echo "tar output:"
+    tar xzf $RUBY_VERSION.tar.gz
+    cd $RUBY_VERSION
+    echo "current directory: `pwd`"
+    echo "Ruby Configuration output: (from calling ./configure)"
+    ./configure
+    echo "Ruby make output: (from calling make)"
+    make
+    echo "Ruby make install output: (from calling make install)"
+    make install
+    cd ..
+    echo "Ruby installed!"
+
+# Set up Nginx
+    export NGINX_VERSION="nginx-1.5.3"
+    echo "Installing Nginx $NGINX_VERSION"
+    echo "Downloading: (from calling wget http://nginx.org/download/$NGINX_VERSION.tar.gz)"
+    wget http://nginx.org/download/$NGINX_VERSION.tar.gz
+    echo "tar output:"
+    tar xzf $NGINX_VERSION.tar.gz
+    cd $NGINX_VERSION
+    echo "current directory: `pwd`"
+    ./configure --prefix=/usr/local/nginx --with-http_stub_status_module --with-http_ssl_module --with-http_gzip_static_module
+    make
+    make install
+    ln -s /usr/local/nginx/sbin/nginx /usr/local/sbin
+    wget https://raw.github.com/simpx/scripts/master/nginx
+    mv nginx /etc/init.d/nginx
+    chmod +x /etc/init.d/nginx
+    cd ..
+    # Start nginx during boot and stop during shutdown
+    update-rc.d -f nginx defaults
+
+# Install git
+    echo "Installing Git"
+    apt-get -y install git-core
+
+# Set up rails environment
+    if [ ! -n "$RR_ENV" ]; then
+        RR_ENV="production"
+    fi
+    cat >> /etc/environment << EOF
+RAILS_ENV="$RR_ENV"
+RACK_ENV="$RR_ENV"
+EOF
+
+# Installing Rails 4
+    gem update --system
+    # Install rails
+    echo "Installing Rails4 and gems"
+    gem install rails --no-ri --no-rdoc
+    #Install sqlite
+    apt-get -y install sqlite3 libsqlite3-dev
+    gem install sqlite3 --no-ri --no-rdoc
+    #Install mongo gem
+    #gem install mongoid bson_ext --no-ri --no-rdoc
+    apt-get -y install postgresql-9.1
+
+
+
+# Add deploy user
+    if [ ! -n "$DEPLOY_USER" ]; then
+        DEPLOY_USER="deploy"
+    fi
+    if [ ! -n "$DEPLOY_PSW" ]; then
+        DEPLOY_PSW="OMG_ITS_MY_PASSWORD!"
+    fi
+    echo "Add deploy user: $DEPLOY_USER"
+    echo "$DEPLOY_USER:$DEPLOY_PSW:1000:1000::/home/$DEPLOY_USER:/bin/bash" | newusers
+    cp -a /etc/skel/.[a-z]* /home/$DEPLOY_USER/
+    chown -R $DEPLOY_USER /home/$DEPLOY_USER
+    # Add to sudoers without password
+    echo "$DEPLOY_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Goodstuff
+    sed -i -e 's/^#PS1=/PS1=/' /home/$DEPLOY_USER/.bashrc # enable the colorful bash prompt
+    sed -i -e "s/^#alias ll='ls -l'/alias ll='ls -al'/" /home/$DEPLOY_USER/.bashrc # enable ll list long alias <3
+    echo "alias cl='clear&&ls -p'" >> /home/$DEPLOY_USER/.bashrc
+    echo "alias s='sudo supervisorctl'" >> /home/$DEPLOY_USER/.bashrc
+
+# Finished
+    echo "StackScript Finished!"
