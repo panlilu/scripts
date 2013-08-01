@@ -27,7 +27,7 @@
     export RUBY_VERSION="ruby-2.0.0-rc2"
     echo "Installing Ruby $RUBY_VERSION"
     echo "Downloading: (from calling wget http://ftp.ruby-lang.org/pub/ruby/2.0/$RUBY_VERSION.tar.gz)"
-    wget http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_VERSION.tar.gz
+    wget http://ftp.ruby-lang.org/pub/ruby/2.0/$RUBY_VERSION.tar.gz
     echo "tar output:"
     tar xzf $RUBY_VERSION.tar.gz
     cd $RUBY_VERSION
